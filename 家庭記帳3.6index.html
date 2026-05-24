@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>家庭理財記帳本</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="家庭記帳本">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2454/2454268.png">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #f7f9f6;       
+            --card-bg: #ffffff;        
+            --text-main: #2b2d42;      
+            --text-sub: #52b788;       
+            --accent-red: #e07a5f;     
+            --border-color: #f1f3f0;
+            --primary-btn: #f2cc8f;    
+            --table-hover: #fcfdfe;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            touch-action: manipulation;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            padding-top: env(safe-area-inset-top, 15px);
+            padding-bottom: env(safe-area-inset-bottom, 15px);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px; 
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            margin-top: 10px;
+        }
+
+        header h1 {
+            font-size: 1.4rem;
+            letter-spacing: 2px;
+            font-weight: 600;
+            color: #3d405b;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+            margin-bottom: 15px;
+            border: 1px solid rgba(0,0,0,0.01);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+            background: #f1f3f0;
+            padding: 10px 14px;
+            border-radius: 12px;
+        }
+
+        .filter-row select {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            background: #fff;
+            font-size: 0.9rem;
+            cursor: pointer;
+            -webkit-appearance: none;
+        }
+
+        .balance-title {
+            font-size: 0.85rem;
+            color: #8d99ae;
+            text-align: center;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .balance-amount {
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-top: 1px solid var(--border-color);
+            padding-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .stat-item { text-align: center; }
+        .stat-item:first-child { border-right: 1px solid var(--border-color); }
+        .stat-label { font-size: 0.85rem; color: #8d99ae; margin-bottom: 5px; }
+        .stat-value { font-size: 1.2rem; font-weight: 600; }
+        
+        .income-color { color: var(--text-sub) !important; }
+        .expense-color { color: var(--accent-red) !important; }
+
+        .charts-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin: 20px 0 10px 0;
+        }
+
+        .chart-box {
+            background: #fafbfa;
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid #f0f2f0;
+        }
+
+        .chart-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #6c757d;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .chart-container-pie {
+            width: 100%;
+            max-width: 240px;
+            margin: 0 auto;
+        }
+
+        .chart-container-bar {
+            width: 100%;
+            height: 180px;
+            position: relative;
+        }
+
+        /* 📊 整合後的唯一統計加總列表樣式 */
+        .subtotal-list {
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 1px dashed #e0e0e0;
+        }
+        .subtotal-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            padding: 6px 8px;
+            margin-bottom: 4px;
+            border-radius: 6px;
+            background: #ffffff;
+            border: 1px solid #f1f3f0;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            background-color: #fafafa;
+            transition: all 0.2s;
+            -webkit-appearance: none;
+        }
+
+        input:focus, select:focus {
+            border-color: #b7dacb;
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.1);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-btn);
+            border: none;
+            border-radius: 8px;
+            color: #3d405b;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-submit:hover { background-color: #f0be6c; }
+
+        .list-title {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            font-weight: 600;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+            color: #3d405b;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        th { color: #8d99ae; font-weight: 500; padding: 10px 6px; border-bottom: 2px solid var(--border-color); text-align: left;}
+        td { padding: 12px 6px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        tr:hover { background-color: var(--table-hover); }
+        
+        .btn-delete {
+            background: none; border: none; color: #e07a5f; cursor: pointer; font-size: 0.85rem; padding: 4px 6px; font-weight: 500;
+        }
+        .empty-tips { text-align: center; color: #adb5bd; padding: 25px 0; font-size: 0.85rem; }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 6px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-expense { background-color: #ffeae6; color: #c94a29; }
+        .badge-income { background-color: #e8f7f0; color: #2d8a5b; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>家庭理財記帳本 3.7 完美視覺版</h1>
+        </header>
+
+        <div class="card">
+            <div class="filter-row">
+                <span style="font-size:0.85rem; color:#555; font-weight:500;">📊 時間篩選：</span>
+                <select id="filterYear" onchange="updateUI()">
+                    <option value="2026">2026 年</option>
+                    <option value="2025">2025 年</option>
+                </select>
+                <select id="filterMonth" onchange="updateUI()">
+                    <option value="all">📊 查看整年報表 (1-12月)</option>
+                    <option value="01">1 月</option>
+                    <option value="02">2 月</option>
+                    <option value="03">3 月</option>
+                    <option value="04">4 月</option>
+                    <option value="05">5 月</option>
+                    <option value="06">6 月</option>
+                    <option value="07">7 月</option>
+                    <option value="08">8 月</option>
+                    <option value="09">9 月</option>
+                    <option value="10">10 月</option>
+                    <option value="11">11 月</option>
+                    <option value="12">12 月</option>
+                </select>
+            </div>
+
+            <div class="balance-title" id="balanceTitle">所選期間淨結餘</div>
+            <div class="balance-amount" id="totalBalance">$ 0</div>
+            
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">總收入</div>
+                    <div class="stat-value income-color" id="totalIncome">$ 0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">總支出</div>
+                    <div class="stat-value expense-color" id="totalExpense">$ 0</div>
+                </div>
+            </div>
+
+            <div class="charts-wrapper">
+                <div class="chart-box">
+                    <div class="chart-title">🍕 支出項目佔比分析與加總排行</div>
+                    <div class="chart-container-pie">
+                        <canvas id="expenseChart"></canvas>
+                    </div>
+                    <div class="subtotal-list" id="subtotalContainer"></div>
+                </div>
+                
+                <div class="chart-box" id="trendChartBox">
+                    <div class="chart-title" id="trendChartTitle">📈 每月收支趨勢圖</div>
+                    <div class="chart-container-bar">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <form id="ledgerForm">
+                <div class="form-row">
+                    <div>
+                        <label for="date">日期</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <div>
+                        <label for="type">帳目類型</label>
+                        <select id="type" onchange="renderCategoryDropdown()">
+                            <option value="expense">➖ 支出功能</option>
+                            <option value="income">➕ 收入功能</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label for="category">選擇項目 (下拉選單)</label>
+                        <select id="category" onchange="checkNewCategoryOption()"></select>
+                    </div>
+                    <div>
+                        <label for="amount">金額</label>
+                        <input type="number" id="amount" placeholder="輸入數字" min="1" required>
+                    </div>
+                </div>
+                <div class="form-row" style="grid-template-columns: 1fr;">
+                    <div>
+                        <label for="note">備註說明</label>
+                        <input type="text" id="note" placeholder="選填詳細說明">
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit">確認記下一筆</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="list-title">歷史理財明細</div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>類型</th>
+                            <th>項目</th>
+                            <th>金額</th>
+                            <th>備註</th>
+                            <th style="text-align: right;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsList"></tbody>
+                </table>
+                <div id="emptyTips" class="empty-tips">目前區間尚無資料。</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const defaultCategories = {
+            'expense': ['早餐', '午餐', '晚餐', '買菜', '加油', '買衣', '褲子', '刷卡', '買麵包', '小吃', '購物', '日用品'],
+            'income': ['薪資', '加班費', '獎金', '股利', '租金收入', '政府補助']
+        };
+
+        let customCategories = JSON.parse(localStorage.getItem('family_ledger_cats_v3_7')) || defaultCategories;
+        let records = JSON.parse(localStorage.getItem('family_ledger_records_v3_7')) || [];
+        
+        const today = new Date();
+        document.getElementById('date').valueAsDate = today;
+        document.getElementById('filterYear').value = today.getFullYear();
+        document.getElementById('filterMonth').value = "all";
+
+        let myPieChart = null;
+        let myBarChart = null;
+
+        function renderCategoryDropdown() {
+            const type = document.getElementById('type').value;
+            const categorySelect = document.getElementById('category');
+            categorySelect.innerHTML = '';
+            
+            customCategories[type].forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                categorySelect.appendChild(opt);
+            });
+
+            const newOpt = document.createElement('option');
+            newOpt.value = "__NEW_ITEM__";
+            newOpt.textContent = "➕ 【新增自訂項目】";
+            newOpt.style.color = "#e07a5f";
+            newOpt.style.fontWeight = "bold";
+            categorySelect.appendChild(newOpt);
+        }
+
+        function checkNewCategoryOption() {
+            const categorySelect = document.getElementById('category');
+            const type = document.getElementById('type').value;
+            const typeText = type === 'expense' ? '支出' : '收入';
+
+            if (categorySelect.value === "__NEW_ITEM__") {
+                const newItemName = prompt(`請輸入您想增加的「${typeText}項目」名稱：\n(新增後將會自動存在下拉選單中)`);
+                
+                if (newItemName && newItemName.trim() !== "") {
+                    const trimmedName = newItemName.trim();
+                    if (!customCategories[type].includes(trimmedName)) {
+                        customCategories[type].push(trimmedName);
+                        localStorage.setItem('family_ledger_cats_v3_7', JSON.stringify(customCategories));
+                    }
+                    renderCategoryDropdown();
+                    categorySelect.value = trimmedName;
+                } else {
+                    categorySelect.selectedIndex = 0;
+                }
+            }
+        }
+
+        function updateUI() {
+            const recordsList = document.getElementById('recordsList');
+            const emptyTips = document.getElementById('emptyTips');
+            const subtotalContainer = document.getElementById('subtotalContainer');
+            
+            recordsList.innerHTML = '';
+            subtotalContainer.innerHTML = '';
+            
+            const selectedYear = document.getElementById('filterYear').value;
+            const selectedMonth = document.getElementById('filterMonth').value;
+
+            document.getElementById('balanceTitle').textContent = selectedMonth === 'all' ? `${selectedYear}年 全年度淨結餘` : '所選月份淨結餘';
+
+            let incomeSum = 0;
+            let expenseSum = 0;
+            const categoryTotals = {};
+            const monthlyIncome = Array(12).fill(0);
+            const monthlyExpense = Array(12).fill(0);
+
+            const filteredRecords = records.filter(record => {
+                const recYear = record.date.substring(0, 4);
+                const recMonth = record.date.substring(5, 7);
+                
+                if (recYear === selectedYear) {
+                    const mIdx = parseInt(recMonth, 10) - 1;
+                    if (record.type === 'income') monthlyIncome[mIdx] += parseFloat(record.amount);
+                    else monthlyExpense[mIdx] += parseFloat(record.amount);
+                }
+
+                return selectedMonth === 'all' ? recYear === selectedYear : (recYear === selectedYear && recMonth === selectedMonth);
+            });
+
+            if (filteredRecords.length === 0) {
+                emptyTips.style.display = 'block';
+                subtotalContainer.innerHTML = '<div class="subtotal-item" style="color:#aaa; justify-content:center; border:none;">目前區間暫無數據</div>';
+            } else {
+                emptyTips.style.display = 'none';
+            }
+
+            filteredRecords.forEach((record) => {
+                const amountNum = parseFloat(record.amount);
+                
+                if (!categoryTotals[record.category]) {
+                    categoryTotals[record.category] = { amount: 0, type: record.type };
+                }
+                categoryTotals[record.category].amount += amountNum;
+
+                if (record.type === 'income') {
+                    incomeSum += amountNum;
+                } else {
+                    expenseSum += amountNum;
+                }
+
+                const originalIndex = records.indexOf(record);
+                const tr = document.createElement('tr');
+                const isIncome = record.type === 'income';
+                
+                const amountClass = isIncome ? 'income-color' : 'expense-color';
+                const prefix = isIncome ? '+$' : '-$';
+                const badgeClass = isIncome ? 'badge-income' : 'badge-expense';
+                const badgeText = isIncome ? '收入' : '支出';
+
+                tr.innerHTML = `
+                    <td>${record.date.substring(5)}</td>
+                    <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                    <td style="font-weight:600; color:#3d405b;">${record.category}</td>
+                    <td class="${amountClass}" style="font-weight:600;">${prefix}${amountNum.toLocaleString()}</td>
+                    <td style="color: #6c757d; font-size: 0.85rem;">${record.note || '-'}</td>
+                    <td style="text-align: right;"><button class="btn-delete" onclick="deleteRecord(${originalIndex})">刪除</button></td>
+                `;
+                recordsList.appendChild(tr);
+            });
+
+            const balanceSum = incomeSum - expenseSum;
+            document.getElementById('totalIncome').textContent = `$ ${incomeSum.toLocaleString()}`;
+            document.getElementById('totalExpense').textContent = `$ ${expenseSum.toLocaleString()}`;
+            document.getElementById('totalBalance').textContent = `$ ${balanceSum.toLocaleString()}`;
+            document.getElementById('totalBalance').style.color = balanceSum >= 0 ? 'var(--text-sub)' : 'var(--accent-red)';
+
+            // 輸出唯一的排行統計（合併進圓餅圖下方框中）
+            const sortedCats = Object.keys(categoryTotals).sort((a, b) => categoryTotals[b].amount - categoryTotals[a].amount);
+            sortedCats.forEach(catName => {
+                const item = categoryTotals[catName];
+                const div = document.createElement('div');
+                div.className = 'subtotal-item';
+                const colorClass = item.type === 'income' ? 'income-color' : 'expense-color';
+                const prefix = item.type === 'income' ? '＋' : '－';
+                
+                div.innerHTML = `
+                    <span style="font-weight:500; color:#4a4a4a;">${prefix} ${catName}</span>
+                    <span class="${colorClass}" style="font-weight:600;">$${item.amount.toLocaleString()}</span>
+                `;
+                subtotalContainer.appendChild(div);
+            });
+
+            updatePieChart(categoryTotals);
+            updateBarChart(monthlyIncome, monthlyExpense, selectedMonth);
+        }
+
+        function updatePieChart(categoryTotals) {
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            const expenseData = [];
+            for (const [name, info] of Object.entries(categoryTotals)) {
+                if (info.type === 'expense') expenseData.push({ name, amount: info.amount });
+            }
+            expenseData.sort((a, b) => b.amount - a.amount);
+            if (myPieChart) myPieChart.destroy();
+
+            if (expenseData.length === 0) {
+                myPieChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['暫無支出項目'],
+                        datasets: [{ data: [1], backgroundColor: ['#e2e8f0'] }]
+                    },
+                    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+                });
+                return;
+            }
+
+            let chartLabels = [];
+            let chartValues = [];
+            if (expenseData.length <= 4) {
+                chartLabels = expenseData.map(d => d.name);
+                chartValues = expenseData.map(d => d.amount);
+            } else {
+                chartLabels = [expenseData[0].name, expenseData[1].name, expenseData[2].name, '其他支出'];
+                const otherSum = expenseData.slice(3).reduce((sum, d) => sum + d.amount, 0);
+                chartValues = [expenseData[0].amount, expenseData[1].amount, expenseData[2].amount, otherSum];
+            }
+
+            myPieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        data: chartValues,
+                        backgroundColor: ['#e07a5f', '#f4a261', '#f2cc8f', '#81b29a', '#cbd5e1'],
+                        borderWidth: 1
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        function updateBarChart(monthlyIncome, monthlyExpense, selectedMonth) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            if (myBarChart) myBarChart.destroy();
+            const monthsLabels = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+            document.getElementById('trendChartTitle').textContent = selectedMonth === 'all' ? '📊 全年度 1-12 月收支對比報表' : `📊 當月收支柱狀對比`;
+
+            myBarChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: monthsLabels,
+                    datasets: [
+                        { label: '總收入', data: monthlyIncome, backgroundColor: '#52b788', borderRadius: 4 },
+                        { label: '總支出', data: monthlyExpense, backgroundColor: '#e07a5f', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: { font: { size: 10 } } }, x: { ticks: { font: { size: 10 } } } },
+                    plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } } }
+                }
+            });
+        }
+
+        document.getElementById('ledgerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const date = document.getElementById('date').value;
+            const type = document.getElementById('type').value;
+            const category = document.getElementById('category').value;
+            const amount = document.getElementById('amount').value;
+            const note = document.getElementById('note').value;
+
+            if (category === "__NEW_ITEM__") {
+                alert('請先選擇或新增一個有效的項目。');
+                return;
+            }
+
+            const newRecord = { date, type, category, amount, note };
+            records.unshift(newRecord);
+            records.sort((a, b) => new Date(b.date) - new Date(a.date));
+            localStorage.setItem('family_ledger_records_v3_7', JSON.stringify(records));
+            updateUI();
+            document.getElementById('amount').value = '';
+            document.getElementById('note').value = '';
+            document.getElementById('date').valueAsDate = new Date();
+        });
+
+        window.deleteRecord = function(index) {
+            if (confirm('確定要刪除這筆紀錄嗎？')) {
+                records.splice(index, 1);
+                localStorage.setItem('family_ledger_records_v3_7', JSON.stringify(records));
+                updateUI();
+            }
+        }
+
+        renderCategoryDropdown();
+        updateUI();
+    </script>
+</body>
+</html>
